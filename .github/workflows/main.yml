@@ -70,7 +70,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build 
-          args: src-tauri --release --target=x86_64-unknown-linux-gnu
+          args: --manifest-path=src-tauri/Cargo.toml --release --target=x86_64-unknown-linux-gnu
 
       - name: Prepare Linux artifacts
         run: |
@@ -114,7 +114,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build 
-          args: src-tauri --release --target=x86_64-pc-windows-msvc
+          args: --manifest-path=src-tauri/Cargo.toml --release --target=x86_64-pc-windows-msvc
 
       - name: Prepare Windows artifacts
         run: |
