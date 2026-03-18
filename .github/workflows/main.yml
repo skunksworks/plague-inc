@@ -17,9 +17,9 @@ jobs:
         include:
       
           - platform: 'ubuntu-22.04'
-            args: ''
+            args: '--no-sign'
           - platform: 'windows-latest'
-            args: ''
+            args: '--no-sign'
 
     runs-on: ${{ matrix.platform }}
     steps:
