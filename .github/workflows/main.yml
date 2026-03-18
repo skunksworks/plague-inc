@@ -64,7 +64,7 @@ jobs:
         run: npm install -g @tauri-apps/cli
 
       - name: Install project dependencies
-        run: npm install
+        run: npm cache clean --force&&npm install
 
       - name: Build Tauri app (Linux)
         uses: actions-rs/cargo@v1
@@ -108,7 +108,7 @@ jobs:
         run: npm install -g @tauri-apps/cli
 
       - name: Install project dependencies
-        run: npm install
+        run: npm cache clean --force&&npm install
 
       - name: Build Tauri app (Windows)
         uses: actions-rs/cargo@v1
