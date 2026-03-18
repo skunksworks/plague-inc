@@ -65,7 +65,11 @@ jobs:
 
       - name: Install project dependencies
         run: npm cache clean --force&&npm install
-
+      - name: install Tauri app (Linux)
+        uses: actions-rs/cargo@v1
+        with:
+          command: install 
+          args: --manifest-path=src-tauri/Cargo.toml
       - name: Build Tauri app (Linux)
         uses: actions-rs/cargo@v1
         with:
