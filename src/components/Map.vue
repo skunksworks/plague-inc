@@ -95,6 +95,7 @@ let currentTileLayer = null
 let geoJsonLayer = null
 const selectedCountry = ref(null)
 const bubbleMarkers = new Map()
+const disasterMarkers = new Map()
 
 // Configuration des fonds de carte
 const tileOptions = [
@@ -298,12 +299,11 @@ watch(
   }
 )
 
-// Watcher pour synchroniser les bulles interactives ADN
+// Watcher pour synchroniser les bulles interactives ADN et fioles de remède
 watch(
   () => plagueStore.activeBubbles,
   (bubbles) => {
     if (!map) return
-    // Supprimer bulles disparues
     const currentIds = new Set(bubbles.map((b) => b.id))
     for (const [id, marker] of bubbleMarkers.entries()) {
       if (!currentIds.has(id)) {
@@ -312,7 +312,6 @@ watch(
       }
     }
 
-    // Ajouter nouvelles bulles
     bubbles.forEach((b) => {
       if (!bubbleMarkers.has(b.id)) {
         const isCure = b.type === 'cure'
@@ -331,6 +330,56 @@ watch(
           plagueStore.popBubble(b.id)
         })
         bubbleMarkers.set(b.id, marker)
+      }
+    })
+  },
+  { deep: true }
+)
+
+// Watcher pour synchroniser les marqueurs de catastrophes naturelles
+watch(
+  () => plagueStore.activeDisasters,
+  (disasters) => {
+    if (!map) return
+    const currentIds = new Set(disasters.map((d) => d.id))
+    for (const [id, marker] of disasterMarkers.entries()) {
+      if (!currentIds.has(id)) {
+        marker.remove()
+        disasterMarkers.delete(id)
+      }
+    }
+
+    disasters.forEach((d) => {
+      if (!disasterMarkers.has(d.id) && d.lat !== 0 && d.lng !== 0) {
+        const iconHtml = `
+          <div class="disaster-marker-container">
+            <div class="disaster-shockwave"></div>
+            <div class="disaster-icon-badge">${d.icon}</div>
+          </div>
+        `
+        const customIcon = L.divIcon({
+          html: iconHtml,
+          className: 'disaster-leaflet-icon',
+          iconSize: [44, 44],
+          iconAnchor: [22, 22]
+        })
+
+        const marker = L.marker([d.lat, d.lng], { icon: customIcon }).addTo(map)
+
+        marker.bindPopup(`
+          <div class="disaster-popup">
+            <h4>${d.icon} ${d.name}</h4>
+            <div class="dp-country"><strong>${d.countryNameFr}</strong> (${d.daysRemaining} j restants)</div>
+            <p>${d.description}</p>
+            <div class="dp-stats">
+              <div>💀 Pertes humaines : <strong>${d.directDeaths.toLocaleString('fr-FR')}</strong></div>
+              <div>⚡ Transmission locale : <strong>x${d.infectivityMultiplier}</strong></div>
+              ${d.borderLock ? '<div class="dp-alert">🚫 Frontières et liaisons aériennes fermées</div>' : ''}
+            </div>
+          </div>
+        `)
+
+        disasterMarkers.set(d.id, marker)
       }
     })
   },
@@ -650,5 +699,89 @@ onBeforeUnmount(() => {
   100% {
     transform: scale(0.95);
   }
+}
+
+:deep(.disaster-marker-container) {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:deep(.disaster-icon-badge) {
+  font-size: 1.5rem;
+  background: rgba(239, 68, 68, 0.45);
+  border: 2px solid #f97316;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.95);
+  z-index: 2;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+:deep(.disaster-icon-badge:hover) {
+  transform: scale(1.25);
+  background: rgba(239, 68, 68, 0.7);
+}
+
+:deep(.disaster-shockwave) {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border: 2px solid #f97316;
+  border-radius: 50%;
+  animation: shockwave 1.6s infinite ease-out;
+  pointer-events: none;
+}
+
+@keyframes shockwave {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+:deep(.disaster-popup) {
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: #1e293b;
+  min-width: 220px;
+}
+
+:deep(.disaster-popup h4) {
+  margin: 0 0 4px 0;
+  font-size: 0.95rem;
+  color: #dc2626;
+  font-weight: 700;
+}
+
+:deep(.dp-country) {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+:deep(.dp-stats) {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+:deep(.dp-alert) {
+  color: #dc2626;
+  font-weight: 700;
 }
 </style>

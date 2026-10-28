@@ -60,8 +60,16 @@
         </button>
       </div>
 
-      <!-- Reset Game Button -->
+      <!-- Reset Game & Actions -->
       <div class="hud-actions">
+        <button
+          v-if="plagueStore.status === 'running'"
+          class="btn btn-outline-warning"
+          title="Provoquer une catastrophe naturelle impromptue"
+          @click="plagueStore.triggerNaturalDisaster()"
+        >
+          🌪️ Catastrophe
+        </button>
         <button class="btn btn-outline-danger" @click="confirmReset">🔄 Réinitialiser</button>
       </div>
     </header>
@@ -161,6 +169,39 @@
           {{ plagueStore.dnaPoints }}
         </div>
         <div class="metric-sub">Collectez de l'ADN en propageant l'infection</div>
+      </div>
+    </div>
+
+    <!-- Active Natural Disasters Banner -->
+    <div
+      v-if="plagueStore.activeDisasters && plagueStore.activeDisasters.length > 0"
+      class="disaster-banner"
+    >
+      <div class="disaster-banner-header">
+        <span class="disaster-radar-ping"></span>
+        <span class="disaster-banner-title">⚠️ ALERTES CATASTROPHES NATURELLES EN COURS ({{ plagueStore.activeDisasters.length }})</span>
+      </div>
+      <div class="disaster-banner-grid">
+        <div
+          v-for="disaster in plagueStore.activeDisasters"
+          :key="disaster.id"
+          class="disaster-card"
+        >
+          <div class="disaster-icon-box">{{ disaster.icon }}</div>
+          <div class="disaster-content">
+            <div class="disaster-header-line">
+              <span class="disaster-name">{{ disaster.name }}</span>
+              <span class="disaster-country">📍 {{ disaster.countryNameFr }}</span>
+              <span class="disaster-countdown">⏱️ {{ disaster.daysRemaining }} j restants</span>
+            </div>
+            <div class="disaster-desc">{{ disaster.description }}</div>
+            <div class="disaster-tags">
+              <span class="d-tag d-tag-death">💀 {{ disaster.directDeaths.toLocaleString('fr-FR') }} victimes</span>
+              <span class="d-tag d-tag-transmission">⚡ Propagation x{{ disaster.infectivityMultiplier }}</span>
+              <span v-if="disaster.borderLock" class="d-tag d-tag-border">🚫 Frontières et liaisons coupées</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -446,6 +487,29 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
 }
 
+.hud-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-outline-warning {
+  background: transparent;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #fbbf24;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-outline-warning:hover {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #f59e0b;
+}
+
 .btn-outline-danger {
   background: transparent;
   border: 1px solid rgba(239, 68, 68, 0.5);
@@ -662,6 +726,163 @@ onBeforeUnmount(() => {
 .btn-start:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Natural Disasters Banner */
+.disaster-banner {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(15, 23, 42, 0.95));
+  border: 1px solid rgba(249, 115, 22, 0.5);
+  border-radius: 10px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: disasterGlow 3s infinite ease-in-out;
+}
+
+@keyframes disasterGlow {
+  0%, 100% {
+    border-color: rgba(249, 115, 22, 0.4);
+    box-shadow: 0 4px 18px rgba(249, 115, 22, 0.2);
+  }
+  50% {
+    border-color: rgba(249, 115, 22, 0.8);
+    box-shadow: 0 4px 26px rgba(249, 115, 22, 0.4);
+  }
+}
+
+.disaster-banner-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.disaster-radar-ping {
+  width: 8px;
+  height: 8px;
+  background: #f97316;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #f97316;
+  animation: disasterPing 1.4s infinite ease-out;
+}
+
+@keyframes disasterPing {
+  0% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.disaster-banner-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #fb923c;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.disaster-banner-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 10px;
+}
+
+.disaster-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.disaster-icon-box {
+  font-size: 1.8rem;
+  line-height: 1;
+  padding: 6px;
+  background: rgba(249, 115, 22, 0.15);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  border-radius: 8px;
+}
+
+.disaster-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.disaster-header-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.disaster-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.disaster-country {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.disaster-countdown {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #fbbf24;
+  font-weight: 700;
+  background: rgba(245, 158, 11, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.disaster-desc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+.disaster-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.d-tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.d-tag-death {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.d-tag-transmission {
+  background: rgba(249, 115, 22, 0.15);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.d-tag-border {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
 /* News Ticker */
