@@ -266,8 +266,16 @@
         <div class="endgame-icon">🏆</div>
         <h2>VICTOIRE TOTALE</h2>
         <p>
-          Votre pathogène <strong>{{ plagueStore.virusName }}</strong> a éradiqué l'humanité entière
+          Votre pathogène <strong>{{ plagueStore.virusName }}</strong> a terrassé l'humanité
           en <strong>{{ plagueStore.gameDay }} jours</strong> !
+        </p>
+        <p class="endgame-subtext">
+          <span v-if="plagueStore.totalAlive > 0">
+            Il reste moins de 12 000 personnes en vie sur Terre (<strong>{{ plagueStore.totalAlive.toLocaleString('fr-FR') }} survivants</strong>). L'effondrement démographique et civilisationnel rend l'extinction de l'espèce humaine irréversible !
+          </span>
+          <span v-else>
+            L'humanité a été entièrement éradiquée.
+          </span>
         </p>
         <button class="btn btn-lg btn-danger" @click="plagueStore.resetGame()">
           Recommencer une partie
@@ -1103,6 +1111,15 @@ onBeforeUnmount(() => {
   font-size: 1rem;
   margin-bottom: 24px;
   line-height: 1.5;
+}
+
+.endgame-subtext {
+  font-size: 0.85rem !important;
+  color: #fca5a5 !important;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 8px;
+  padding: 10px 14px;
 }
 
 .btn-lg {

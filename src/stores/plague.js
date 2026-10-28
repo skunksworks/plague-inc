@@ -82,6 +82,14 @@ export const usePlagueStore = defineStore('plague', {
       return Math.max(0, remaining)
     },
 
+    totalAlive(state) {
+      if (!state.countries || state.countries.length === 0) return 0
+      return Math.max(
+        0,
+        state.countries.reduce((sum, c) => sum + (c.healthy || 0) + (c.infected || 0), 0)
+      )
+    },
+
     infectedPercentage() {
       if (!this.totalPopulation) return 0
       return (this.numberOfInfected / this.totalPopulation) * 100
@@ -695,11 +703,18 @@ export const usePlagueStore = defineStore('plague', {
         }
       }
 
-      // Victoire : toute l'humanité a succombé
-      if (this.totalHealthy === 0 && this.numberOfInfected === 0 && totalDead > 1000000) {
+      // Condition de Victoire : moins de 12 000 personnes en vie sur Terre
+      // (En dessous de ce seuil critique, l'effondrement génétique et civilisationnel rend l'extinction irréversible)
+      const currentAlive = this.totalAlive
+      if (
+        this.status === 'running' &&
+        this.totalPopulation > 100000 &&
+        totalDead > 100000 &&
+        currentAlive < 12000
+      ) {
         this.status = 'won'
         this.addNews(
-          "🏆 VICTOIRE : L'humanité entière a été éradiquée par votre pathogène !",
+          `🏆 VICTOIRE : Moins de 12 000 personnes en vie (${currentAlive.toLocaleString('fr-FR')} survivants restants) ! L'extinction de l'humanité est inéluctable.`,
           'danger'
         )
         return
