@@ -225,25 +225,81 @@ export const usePlagueStore = defineStore('plague', {
       }
     },
 
-    purchaseModification(modId) {
+    canPurchaseModification(modId) {
       const mod = this.modifications.find((m) => m.id === modId)
       if (!mod || this.purchasedModifications.includes(modId)) return false
-
       if (this.dnaPoints < mod.cost) return false
+      if (mod.prerequisites && mod.prerequisites.length > 0) {
+        const hasAllPrereqs = mod.prerequisites.every((reqId) =>
+          this.purchasedModifications.includes(reqId)
+        )
+        if (!hasAllPrereqs) return false
+      }
+      return true
+    },
+
+    canDevolveModification(modId) {
+      if (!this.purchasedModifications.includes(modId)) return false
+      const hasDependent = this.modifications.some(
+        (m) =>
+          this.purchasedModifications.includes(m.id) &&
+          m.prerequisites &&
+          m.prerequisites.includes(modId)
+      )
+      return !hasDependent
+    },
+
+    recalculateVirusStats() {
+      let inf = 1.25
+      let sev = 0.4
+      let letRate = 0.05
+      let res = 1.0
+
+      this.purchasedModifications.forEach((id) => {
+        const mod = this.modifications.find((m) => m.id === id)
+        if (mod && mod.effects) {
+          if (mod.effects.infectivity) inf *= mod.effects.infectivity
+          if (mod.effects.severity) sev *= mod.effects.severity
+          if (mod.effects.lethality) letRate *= mod.effects.lethality
+          if (mod.effects.cureResistance) res *= mod.effects.cureResistance
+        }
+      })
+
+      this.infectivity = inf
+      this.severity = sev
+      this.lethality = letRate
+      this.cureResistance = res
+    },
+
+    purchaseModification(modId) {
+      const mod = this.modifications.find((m) => m.id === modId)
+      if (!this.canPurchaseModification(modId)) return false
 
       this.dnaPoints -= mod.cost
       this.purchasedModifications.push(modId)
-
-      // Appliquer les effets
-      if (mod.effects) {
-        if (mod.effects.infectivity) this.infectivity *= mod.effects.infectivity
-        if (mod.effects.severity) this.severity *= mod.effects.severity
-        if (mod.effects.lethality) this.lethality *= mod.effects.lethality
-        if (mod.effects.cureResistance) this.cureResistance *= mod.effects.cureResistance
-      }
+      this.recalculateVirusStats()
 
       this.addNews(`🧬 Mutation évoluée : « ${mod.name} » (+Infection / Sévérité).`, 'info')
       return true
+    },
+
+    devolveModification(modId) {
+      const mod = this.modifications.find((m) => m.id === modId)
+      if (!this.canDevolveModification(modId)) return false
+
+      const idx = this.purchasedModifications.indexOf(modId)
+      if (idx !== -1) {
+        this.purchasedModifications.splice(idx, 1)
+        const refundDna = Math.max(1, Math.floor(mod.cost * 0.5))
+        this.dnaPoints += refundDna
+        this.recalculateVirusStats()
+        this.addNews(
+          `🧬 Mutation régressée : « ${mod.name} » (+${refundDna} ADN remboursé).`,
+          'info'
+        )
+        return true
+      }
+      return false
     },
 
     popBubble(bubbleId) {
@@ -416,6 +472,27 @@ export const usePlagueStore = defineStore('plague', {
       // Attribution de points ADN réguliers
       if (Math.random() < 0.25) {
         this.dnaPoints += 1
+      }
+
+      // Mutation spontanée aléatoire (comme dans Plague Inc)
+      if (Math.random() < 0.02 && this.status === 'running') {
+        const eligibleMutations = this.modifications.filter(
+          (m) =>
+            m.category === 'symptom' &&
+            !this.purchasedModifications.includes(m.id) &&
+            (!m.prerequisites ||
+              m.prerequisites.length === 0 ||
+              m.prerequisites.every((r) => this.purchasedModifications.includes(r)))
+        )
+        if (eligibleMutations.length > 0) {
+          const picked = eligibleMutations[Math.floor(Math.random() * eligibleMutations.length)]
+          this.purchasedModifications.push(picked.id)
+          this.recalculateVirusStats()
+          this.addNews(
+            `✨ Mutation spontanée ! Le virus a développé gratuitement : « ${picked.name} » !`,
+            'warning'
+          )
+        }
       }
 
       // Jalons d'infections pour points bonus
