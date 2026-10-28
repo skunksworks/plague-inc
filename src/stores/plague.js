@@ -51,17 +51,17 @@ export const usePlagueStore = defineStore('plague', {
   getters: {
     totalPopulation: (state) => {
       return (
-        Object.values(state.countryData).reduce((sum, c) => sum + (c.population || 0), 0) ||
+        state.countries.reduce((sum, c) => sum + (c.population || 0), 0) ||
         7950000000
       )
     },
 
     numberOfInfected: (state) => {
-      return Object.values(state.countryData).reduce((sum, c) => sum + (c.infected || 0), 0)
+      return state.countries.reduce((sum, c) => sum + (c.infected || 0), 0)
     },
 
     totalDead: (state) => {
-      return Object.values(state.countryData).reduce((sum, c) => sum + (c.dead || 0), 0)
+      return state.countries.reduce((sum, c) => sum + (c.dead || 0), 0)
     },
 
     totalHealthy() {
@@ -80,7 +80,7 @@ export const usePlagueStore = defineStore('plague', {
     },
 
     infectedCountriesCount: (state) => {
-      return Object.values(state.countryData).filter((c) => c.infected > 0 || c.dead > 0).length
+      return state.countries.filter((c) => c.infected > 0 || c.dead > 0).length
     },
 
     currentDateString: (state) => {
@@ -247,7 +247,7 @@ export const usePlagueStore = defineStore('plague', {
 
       this.gameDay++
 
-      const infectedList = Object.values(this.countryData).filter((c) => c.infected > 0)
+      const infectedList = this.countries.filter((c) => c.infected > 0)
 
       // Simulation par pays
       for (const country of infectedList) {
