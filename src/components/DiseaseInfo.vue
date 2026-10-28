@@ -225,16 +225,11 @@
             <div class="purchased-box">
               <span class="tag-bought">✓ Acquis</span>
               <button
-                class="btn-devolve"
-                :title="
-                  canDevolve(mod.id)
-                    ? 'Dévouer cette mutation pour récupérer des points ADN'
-                    : 'Impossible : une autre mutation acquise dépend de celle-ci'
-                "
-                :disabled="!canDevolve(mod.id)"
-                @click="devolveMod(mod.id)"
+                class="btn-cancel-mod"
+                :title="`Annuler cette modification et récupérer ${mod.cost} points d'ADN`"
+                @click="cancelMod(mod.id)"
               >
-                ↩ Dévouer (+{{ Math.max(1, Math.floor(mod.cost * 0.5)) }} ADN)
+                ✕ Annuler (+{{ mod.cost }} ADN)
               </button>
             </div>
           </template>
@@ -288,16 +283,12 @@ function canPurchase(id) {
   return plagueStore.canPurchaseModification(id)
 }
 
-function canDevolve(id) {
-  return plagueStore.canDevolveModification(id)
+function cancelMod(id) {
+  plagueStore.cancelModification(id)
 }
 
 function buyMod(id) {
   plagueStore.purchaseModification(id)
-}
-
-function devolveMod(id) {
-  plagueStore.devolveModification(id)
 }
 
 function getMissingPrereqsNames(mod) {
@@ -878,27 +869,24 @@ function getCategoryLabel(cat) {
   text-align: center;
 }
 
-.btn-devolve {
-  background: transparent;
-  border: 1px solid rgba(239, 68, 68, 0.4);
+.btn-cancel-mod {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.5);
   color: #f87171;
-  padding: 3px 6px;
-  border-radius: 5px;
-  font-size: 0.65rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
-.btn-devolve:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.15);
+.btn-cancel-mod:hover {
+  background: rgba(239, 68, 68, 0.35);
   border-color: #ef4444;
-}
-
-.btn-devolve:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  border-color: rgba(255, 255, 255, 0.1);
-  color: #64748b;
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 @media (max-width: 768px) {

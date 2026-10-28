@@ -238,15 +238,61 @@ export const usePlagueStore = defineStore('plague', {
       return true
     },
 
-    canDevolveModification(modId) {
+    canCancelModification(modId) {
+      return this.purchasedModifications.includes(modId)
+    },
+
+    cancelModification(modId) {
       if (!this.purchasedModifications.includes(modId)) return false
-      const hasDependent = this.modifications.some(
-        (m) =>
-          this.purchasedModifications.includes(m.id) &&
-          m.prerequisites &&
-          m.prerequisites.includes(modId)
+
+      // Trouver récursivement toutes les modifications qui dépendent de celle-ci
+      const toCancel = [modId]
+      let added = true
+      while (added) {
+        added = false
+        this.modifications.forEach((m) => {
+          if (
+            this.purchasedModifications.includes(m.id) &&
+            !toCancel.includes(m.id) &&
+            m.prerequisites &&
+            m.prerequisites.some((req) => toCancel.includes(req))
+          ) {
+            toCancel.push(m.id)
+            added = true
+          }
+        })
+      }
+
+      // Rembourser 100% du coût en points ADN pour chaque modification annulée
+      let totalRefund = 0
+      toCancel.forEach((id) => {
+        const mod = this.modifications.find((m) => m.id === id)
+        if (mod) {
+          totalRefund += mod.cost
+        }
+        const idx = this.purchasedModifications.indexOf(id)
+        if (idx !== -1) {
+          this.purchasedModifications.splice(idx, 1)
+        }
+      })
+
+      this.dnaPoints += totalRefund
+      this.recalculateVirusStats()
+
+      const targetMod = this.modifications.find((m) => m.id === modId)
+      const name = targetMod ? targetMod.name : 'Modification'
+      const extraCount = toCancel.length - 1
+      const extraText = extraCount > 0 ? ` (+${extraCount} dérivée(s))` : ''
+
+      this.addNews(
+        `↩ Modification annulée : « ${name} »${extraText} (+${totalRefund} ADN récupéré).`,
+        'info'
       )
-      return !hasDependent
+      return true
+    },
+
+    devolveModification(modId) {
+      return this.cancelModification(modId)
     },
 
     recalculateVirusStats() {
@@ -283,24 +329,6 @@ export const usePlagueStore = defineStore('plague', {
       return true
     },
 
-    devolveModification(modId) {
-      const mod = this.modifications.find((m) => m.id === modId)
-      if (!this.canDevolveModification(modId)) return false
-
-      const idx = this.purchasedModifications.indexOf(modId)
-      if (idx !== -1) {
-        this.purchasedModifications.splice(idx, 1)
-        const refundDna = Math.max(1, Math.floor(mod.cost * 0.5))
-        this.dnaPoints += refundDna
-        this.recalculateVirusStats()
-        this.addNews(
-          `🧬 Mutation régressée : « ${mod.name} » (+${refundDna} ADN remboursé).`,
-          'info'
-        )
-        return true
-      }
-      return false
-    },
 
     popBubble(bubbleId) {
       const idx = this.activeBubbles.findIndex((b) => b.id === bubbleId)
