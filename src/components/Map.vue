@@ -11,6 +11,20 @@
             Propagation active ({{ plagueStore.infectedCountriesCount }} pays touchés)
           </span>
         </h2>
+
+        <!-- Tile Layer Switcher -->
+        <div class="tile-switcher">
+          <button
+            v-for="tile in tileOptions"
+            :key="tile.id"
+            class="tile-btn"
+            :class="{ active: currentTileId === tile.id }"
+            :title="tile.tooltip"
+            @click="changeTileLayer(tile.id)"
+          >
+            {{ tile.label }}
+          </button>
+        </div>
       </div>
 
       <!-- Quick country info bar if a country is selected -->
@@ -77,22 +91,77 @@ import { usePlagueStore } from '../stores/plague'
 const plagueStore = usePlagueStore()
 const mapContainer = ref(null)
 let map = null
+let currentTileLayer = null
 let geoJsonLayer = null
 const selectedCountry = ref(null)
 const bubbleMarkers = new Map()
 
-// Style fonctionnel pour chaque pays selon son état d'infection
+// Configuration des fonds de carte
+const tileOptions = [
+  {
+    id: 'satellite',
+    label: '🛰️ Satellite',
+    tooltip: 'Vue Satellite Réaliste Esri World Imagery',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    options: { maxZoom: 18 }
+  },
+  {
+    id: 'dark',
+    label: '🌌 Nuit Tactique',
+    tooltip: 'Carte Sombre CartoDB Dark Matter',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    options: { subdomains: 'abcd', maxZoom: 19 }
+  },
+  {
+    id: 'gray',
+    label: '🏢 Gris Militaire',
+    tooltip: 'Fond Gris Sobre Esri Dark Gray Canvas',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    options: { maxZoom: 16 }
+  },
+  {
+    id: 'osm',
+    label: '🗺️ Standard',
+    tooltip: 'Carte OpenStreetMap Classique',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    options: { maxZoom: 19 }
+  }
+]
+
+const currentTileId = ref('satellite')
+
+function changeTileLayer(tileId) {
+  const chosen = tileOptions.find((t) => t.id === tileId)
+  if (!chosen || !map) return
+
+  currentTileId.value = tileId
+
+  if (currentTileLayer) {
+    map.removeLayer(currentTileLayer)
+  }
+
+  currentTileLayer = L.tileLayer(chosen.url, chosen.options).addTo(map)
+
+  // S'assurer que le GeoJSON reste au premier plan
+  if (geoJsonLayer) {
+    geoJsonLayer.bringToFront()
+    refreshMapStyles()
+  }
+}
+
+// Style fonctionnel pour chaque pays selon son état d'infection et le fond de carte
 function getCountryStyle(feature) {
   const name = feature.properties?.name || feature.properties?.NAME
   const nameFr = feature.properties?.name_fr || feature.properties?.NAME_FR
   const data = plagueStore.countryData[name] || plagueStore.countryData[nameFr]
+  const isSatellite = currentTileId.value === 'satellite'
 
   if (!data || (data.infected === 0 && data.dead === 0)) {
     return {
-      fillColor: '#1e293b',
-      fillOpacity: 0.65,
-      weight: 1,
-      color: '#334155',
+      fillColor: isSatellite ? '#020617' : '#1e293b',
+      fillOpacity: isSatellite ? 0.08 : 0.65,
+      weight: isSatellite ? 1 : 1,
+      color: isSatellite ? 'rgba(255, 255, 255, 0.45)' : '#334155',
       dashArray: ''
     }
   }
@@ -128,8 +197,8 @@ function getCountryStyle(feature) {
   return {
     fillColor,
     fillOpacity,
-    weight: 1,
-    color: '#7f1d1d'
+    weight: 1.2,
+    color: isSatellite ? '#fca5a5' : '#7f1d1d'
   }
 }
 
@@ -160,16 +229,14 @@ onMounted(async () => {
     center: [20, 0],
     zoom: 2,
     minZoom: 2,
-    maxZoom: 6,
+    maxZoom: 7,
     worldCopyJump: true,
     attributionControl: false
   })
 
-  // Fond de carte sombre CartoDB Dark Matter
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd',
-    maxZoom: 19
-  }).addTo(map)
+  // Fond de carte initial (Satellite)
+  const defaultTile = tileOptions.find((t) => t.id === currentTileId.value) || tileOptions[0]
+  currentTileLayer = L.tileLayer(defaultTile.url, defaultTile.options).addTo(map)
 
   // Charger les pays via le store
   try {
@@ -206,7 +273,7 @@ onMounted(async () => {
         // Effet de surbrillance
         layer.on('mouseover', () => {
           layer.setStyle({
-            weight: 2,
+            weight: 2.5,
             color: '#f59e0b',
             dashArray: ''
           })
@@ -300,6 +367,14 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
+.map-title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .map-title-bar h2 {
   pointer-events: auto;
   display: inline-flex;
@@ -314,6 +389,40 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(8px);
   color: #f1f5f9;
   margin: 0;
+}
+
+.tile-switcher {
+  pointer-events: auto;
+  display: flex;
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.9);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+}
+
+.tile-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tile-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+.tile-btn.active {
+  background: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
 }
 
 .badge {
@@ -430,7 +539,7 @@ onBeforeUnmount(() => {
   flex: 1;
   width: 100%;
   height: 100%;
-  background: #090d16;
+  background: #020617;
 }
 
 .map-legend {
