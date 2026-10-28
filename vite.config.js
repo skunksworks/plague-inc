@@ -4,9 +4,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 
-// https://vitejmodule.exports = {
-
-
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
@@ -15,14 +13,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
-    },proxy: {
-      '/api': {
-        target: 'https://euezoazieuaczioeuzaieouazioezuei.github.io/api/',
-        changeOrigin: true,
-        pathRewrite: {
-          '^/api': '',
-        },
-      },
     }
+  },
+  server: {
+    port: 5173,
+    strictPort: true
   }
 })

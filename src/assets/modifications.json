@@ -1,33 +1,146 @@
 [
-    {
-      "id": 1,
-      "name": "Enhanced Transmission",
-      "effects": {
-        "infectivity": 1.5,
-        "severity": 1.2,
-        "lethality": 1.1
-      },
-      "cost": 4
+  {
+    "id": 1,
+    "name": "Aérosol (Air I)",
+    "category": "transmission",
+    "description": "L'agent pathogène survit dans les particules en suspension dans l'air. Augmente la propagation par avions et zones urbaines.",
+    "effects": {
+      "infectivity": 1.45,
+      "severity": 1.05,
+      "lethality": 1.0
     },
-    {
-      "id": 2,
-      "name": "Stealthy Strain",
-      "effects": {
-        "infectivity": 1.3,
-        "severity": 0.8,
-        "lethality": 0.9
-      },
-      "cost": 5
+    "cost": 5
+  },
+  {
+    "id": 2,
+    "name": "Vecteur Hydrique (Eau I)",
+    "category": "transmission",
+    "description": "Survie prolongée dans l'eau potable. Augmente drastiquement la transmission maritime et dans les pays humides.",
+    "effects": {
+      "infectivity": 1.4,
+      "severity": 1.0,
+      "lethality": 1.0
     },
-    {
-      "id": 3,
-      "name": "Adaptive Resistance",
-      "effects": {
-        "infectivity": 1.2,
-        "severity": 1.1,
-        "lethality": 1.3
-      },
-      "cost": 6
-    }
-  ]
-  
+    "cost": 6
+  },
+  {
+    "id": 3,
+    "name": "Vecteur Animal (Oiseaux & Rongeurs)",
+    "category": "transmission",
+    "description": "Les animaux sauvages et oiseaux migrateurs propagent la maladie à travers les frontières sans contrôle douanier.",
+    "effects": {
+      "infectivity": 1.6,
+      "severity": 1.1,
+      "lethality": 1.05
+    },
+    "cost": 9
+  },
+  {
+    "id": 4,
+    "name": "Bio-aérosol Extrême (Air II)",
+    "category": "transmission",
+    "description": "Le pathogène s'adapte à la climatisation et aux cabines pressurisées des avions de ligne.",
+    "effects": {
+      "infectivity": 1.8,
+      "severity": 1.15,
+      "lethality": 1.0
+    },
+    "cost": 12
+  },
+  {
+    "id": 5,
+    "name": "Toux & Éternuements",
+    "category": "symptom",
+    "description": "Projette des milliards de particules virales. Très contagieux mais commence à attirer l'attention des autorités.",
+    "effects": {
+      "infectivity": 1.5,
+      "severity": 1.3,
+      "lethality": 1.02
+    },
+    "cost": 4
+  },
+  {
+    "id": 6,
+    "name": "Fièvre & Éruptions",
+    "category": "symptom",
+    "description": "Hausse soudaine de la température corporelle et lésions cutanées visibles.",
+    "effects": {
+      "infectivity": 1.3,
+      "severity": 1.5,
+      "lethality": 1.1
+    },
+    "cost": 7
+  },
+  {
+    "id": 7,
+    "name": "Défaillance Pulmonaire",
+    "category": "symptom",
+    "description": "Destruction des alvéoles pulmonaires. Entraîne des difficultés respiratoires sévères et de premiers décès.",
+    "effects": {
+      "infectivity": 1.2,
+      "severity": 1.8,
+      "lethality": 1.6
+    },
+    "cost": 14
+  },
+  {
+    "id": 8,
+    "name": "Défaillance Multiviscérale",
+    "category": "symptom",
+    "description": "Nécrose rapide des organes vitaux. Hautement mortel.",
+    "effects": {
+      "infectivity": 1.1,
+      "severity": 2.2,
+      "lethality": 2.5
+    },
+    "cost": 22
+  },
+  {
+    "id": 9,
+    "name": "Résistance au Froid",
+    "category": "resistance",
+    "description": "Membranes cellulaires renforcées contre les climats tempérés et polaires (Canada, Russie, Scandinavie).",
+    "effects": {
+      "infectivity": 1.35,
+      "severity": 1.0,
+      "lethality": 1.0
+    },
+    "cost": 8
+  },
+  {
+    "id": 10,
+    "name": "Résistance à la Chaleur",
+    "category": "resistance",
+    "description": "Protection contre les températures arides et tropicales (Afrique, Moyen-Orient, Amérique du Sud).",
+    "effects": {
+      "infectivity": 1.35,
+      "severity": 1.0,
+      "lethality": 1.0
+    },
+    "cost": 8
+  },
+  {
+    "id": 11,
+    "name": "Résistance Médicamenteuse",
+    "category": "resistance",
+    "description": "Le pathogène neutralise les antibiotiques et antiviraux courants dans les pays riches.",
+    "effects": {
+      "infectivity": 1.3,
+      "severity": 1.2,
+      "cureResistance": 1.5
+    },
+    "cost": 12
+  },
+  {
+    "id": 12,
+    "name": "Recombinaison Génétique",
+    "category": "resistance",
+    "description": "Mute constamment pour rendre les anticorps inefficaces. Ralentit fortement le développement d'un vaccin.",
+    "effects": {
+      "infectivity": 1.1,
+      "severity": 1.1,
+      "cureResistance": 2.2
+    },
+    "cost": 18
+  }
+]
