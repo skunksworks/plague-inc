@@ -315,12 +315,15 @@ watch(
     // Ajouter nouvelles bulles
     bubbles.forEach((b) => {
       if (!bubbleMarkers.has(b.id)) {
-        const iconHtml = `<div class="dna-bubble pulse-animation">🧬</div>`
+        const isCure = b.type === 'cure'
+        const iconHtml = isCure
+          ? `<div class="cure-bubble pulse-animation" title="Saboter les recherches du remède mondial">🧪</div>`
+          : `<div class="dna-bubble pulse-animation" title="Points ADN">🧬</div>`
         const customIcon = L.divIcon({
           html: iconHtml,
-          className: 'bubble-icon',
-          iconSize: [32, 32],
-          iconAnchor: [16, 16]
+          className: isCure ? 'bubble-icon cure' : 'bubble-icon dna',
+          iconSize: [36, 36],
+          iconAnchor: [18, 18]
         })
 
         const marker = L.marker([b.lat, b.lng], { icon: customIcon }).addTo(map)
@@ -591,5 +594,61 @@ onBeforeUnmount(() => {
 .legend-color.dead {
   background: #270808;
   border: 1px solid #581c1c;
+}
+
+:deep(.cure-bubble) {
+  font-size: 1.3rem;
+  background: rgba(14, 165, 233, 0.4);
+  border: 2px solid #38bdf8;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.8);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+:deep(.cure-bubble:hover) {
+  transform: scale(1.25);
+  background: rgba(14, 165, 233, 0.7);
+}
+
+:deep(.dna-bubble) {
+  font-size: 1.25rem;
+  background: rgba(239, 68, 68, 0.4);
+  border: 2px solid #ef4444;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.75);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+:deep(.dna-bubble:hover) {
+  transform: scale(1.25);
+  background: rgba(239, 68, 68, 0.7);
+}
+
+:deep(.pulse-animation) {
+  animation: bubble-pulse 1.3s infinite ease-in-out;
+}
+
+@keyframes bubble-pulse {
+  0% {
+    transform: scale(0.95);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(0.95);
+  }
 }
 </style>

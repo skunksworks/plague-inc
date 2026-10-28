@@ -120,6 +120,9 @@
         <div class="metric-header">
           <span class="metric-icon">🧪</span>
           <span class="metric-title">Recherche du Remède</span>
+          <span v-if="plagueStore.cureActive" class="cure-speed-badge">
+            +{{ (plagueStore.dailyCureSpeed * 10).toFixed(2) }}%/j
+          </span>
         </div>
         <div class="metric-value text-blue">{{ plagueStore.cureProgress.toFixed(1) }}%</div>
         <div class="metric-bar">
@@ -129,11 +132,22 @@
           ></div>
         </div>
         <div class="metric-sub">
-          {{
-            plagueStore.cureActive
-              ? 'Recherche active par la communauté internationale'
-              : "Aucune alerte OMS pour l'instant"
-          }}
+          <div v-if="plagueStore.cureActive" class="medical-capacity-info">
+            <span class="cap-label">🩺 Capacité labos :</span>
+            <span class="cap-val" :class="plagueStore.medicalStatusClass">
+              {{ plagueStore.medicalCapacity }}%
+            </span>
+          </div>
+          <div v-if="plagueStore.cureActive && plagueStore.cureSlowdownPercentage > 0" class="cap-penalty">
+            ⚠️ Ralenti de -{{ plagueStore.cureSlowdownPercentage }}% (décès de médecins)
+          </div>
+          <div v-else class="cap-status">
+            {{
+              plagueStore.cureActive
+                ? plagueStore.medicalStatus
+                : "Aucune alerte OMS pour l'instant"
+            }}
+          </div>
         </div>
       </div>
 
@@ -532,6 +546,52 @@ onBeforeUnmount(() => {
 .metric-sub {
   font-size: 0.7rem;
   color: #64748b;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cure-speed-badge {
+  margin-left: auto;
+  font-size: 0.65rem;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.medical-capacity-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cap-val {
+  font-weight: 700;
+}
+
+.cap-val.operational {
+  color: #4ade80;
+}
+
+.cap-val.strained {
+  color: #fbbf24;
+}
+
+.cap-val.crisis {
+  color: #f87171;
+}
+
+.cap-val.collapsed {
+  color: #c084fc;
+}
+
+.cap-penalty {
+  color: #f87171;
+  font-size: 0.65rem;
+  font-weight: 600;
 }
 
 /* Setup Banner */

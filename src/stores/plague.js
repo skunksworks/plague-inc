@@ -11,8 +11,8 @@ export const usePlagueStore = defineStore('plague', {
     firstInfected: null,
 
     // Pays et données GeoJSON
-    countries: [], // Liste ordonnée de pays
-    countryData: {}, // Map: name -> { name, name_fr, population, infected, dead, healthy, continent, closedBorders }
+    countries: [], // Liste ordonnée de pays uniques
+    countryData: {}, // Map: name / name_fr -> country object
     geoJson: null,
     isGeoJsonLoaded: false,
 
@@ -27,11 +27,18 @@ export const usePlagueStore = defineStore('plague', {
     cureProgress: 0, // 0 à 100
     cureActive: false,
 
+    // Système de recherche & Capacité médicale (impact des décès)
+    medicalCapacity: 100, // 0 à 100% (baisse drastiquement avec les morts de médecins)
+    doctorCasualtyPenalty: 1.0, // Multiplicateur de recherche (1.0 -> 0.05)
+    dailyCureSpeed: 0, // Vitesse quotidienne nette du remède
+    hasTriggeredMedicalCrisisNews: false,
+    hasTriggeredMedicalCollapseNews: false,
+
     // Améliorations
     modifications: modificationsData,
     purchasedModifications: [],
 
-    // Bulles interactives sur la carte (clic = bonus ADN)
+    // Bulles interactives sur la carte (ADN et Fioles de recherche bleues)
     activeBubbles: [],
 
     // Fil d'actualité
@@ -83,6 +90,24 @@ export const usePlagueStore = defineStore('plague', {
       return state.countries.filter((c) => c.infected > 0 || c.dead > 0).length
     },
 
+    medicalStatus: (state) => {
+      if (state.medicalCapacity >= 80) return 'Opérationnel (Laboratoires actifs)'
+      if (state.medicalCapacity >= 50) return 'Sous tension (Pénurie de soignants)'
+      if (state.medicalCapacity >= 20) return 'Crise hospitalière (Décès de médecins & chercheurs)'
+      return 'Effondrement total (Laboratoires fermés, hôpitaux anéantis)'
+    },
+
+    medicalStatusClass: (state) => {
+      if (state.medicalCapacity >= 80) return 'operational'
+      if (state.medicalCapacity >= 50) return 'strained'
+      if (state.medicalCapacity >= 20) return 'crisis'
+      return 'collapsed'
+    },
+
+    cureSlowdownPercentage: (state) => {
+      return Math.round((1 - state.doctorCasualtyPenalty) * 100)
+    },
+
     currentDateString: (state) => {
       const d = new Date(state.startDate)
       d.setDate(d.getDate() + state.gameDay)
@@ -127,14 +152,14 @@ export const usePlagueStore = defineStore('plague', {
           }
 
           countryMap[name] = item
-          // Alias aussi par nom français si différent pour lookup facile
+          // Alias par nom français pour recherche facile
           if (nameFr !== name) {
             countryMap[nameFr] = item
           }
           countryList.push(item)
         })
 
-        // Trier par nom alphabétique
+        // Trier alphabétiquement par nom français
         countryList.sort((a, b) => a.name_fr.localeCompare(b.name_fr))
 
         this.countries = countryList
@@ -195,8 +220,7 @@ export const usePlagueStore = defineStore('plague', {
         text,
         type
       })
-      // Garder les 20 plus récentes
-      if (this.newsFeed.length > 20) {
+      if (this.newsFeed.length > 25) {
         this.newsFeed.pop()
       }
     },
@@ -226,13 +250,27 @@ export const usePlagueStore = defineStore('plague', {
       const idx = this.activeBubbles.findIndex((b) => b.id === bubbleId)
       if (idx !== -1) {
         const bubble = this.activeBubbles[idx]
-        this.dnaPoints += bubble.points || 2
+
+        if (bubble.type === 'cure') {
+          // Sabotage du remède !
+          const setback = 1.0 + Math.random() * 1.8
+          this.cureProgress = Math.max(0, this.cureProgress - setback)
+          this.dnaPoints += 1
+          this.addNews(
+            `🧪 Fiole de recherche détruite ! Le remède mondial recule de ${setback.toFixed(1)}% (+1 ADN).`,
+            'warning'
+          )
+        } else {
+          // Bulle ADN
+          this.dnaPoints += bubble.points || 2
+        }
+
         this.activeBubbles.splice(idx, 1)
       }
     },
 
     spawnBubble(lat, lng, type = 'dna') {
-      if (this.activeBubbles.length > 6) return
+      if (this.activeBubbles.length > 8) return
       this.activeBubbles.push({
         id: 'bubble_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
         lat,
@@ -242,6 +280,26 @@ export const usePlagueStore = defineStore('plague', {
       })
     },
 
+    spawnCureBubble() {
+      // Pôles de recherche majeurs
+      const researchHubs = [
+        { name: 'France', lat: 46.6, lng: 2.2 },
+        { name: 'États-Unis', lat: 37.0, lng: -95.7 },
+        { name: 'Royaume-Uni', lat: 55.3, lng: -3.4 },
+        { name: 'Allemagne', lat: 51.1, lng: 10.4 },
+        { name: 'Chine', lat: 35.8, lng: 104.1 },
+        { name: 'Japon', lat: 36.2, lng: 138.2 },
+        { name: 'Suisse', lat: 46.8, lng: 8.2 }
+      ]
+
+      const chosen = researchHubs[Math.floor(Math.random() * researchHubs.length)]
+      // Décalage léger aléatoire
+      const jitterLat = chosen.lat + (Math.random() - 0.5) * 4
+      const jitterLng = chosen.lng + (Math.random() - 0.5) * 4
+
+      this.spawnBubble(jitterLat, jitterLng, 'cure')
+    },
+
     tick() {
       if (this.status !== 'running') return
 
@@ -249,7 +307,7 @@ export const usePlagueStore = defineStore('plague', {
 
       const infectedList = this.countries.filter((c) => c.infected > 0)
 
-      // Simulation par pays
+      // Simulation épidémique par pays
       for (const country of infectedList) {
         if (country.healthy <= 0 && country.infected <= 0) continue
 
@@ -282,11 +340,39 @@ export const usePlagueStore = defineStore('plague', {
         }
       }
 
-      // Progression du remède mondial
+      // Métriques globales
       const totalInf = this.numberOfInfected
       const totalDead = this.totalDead
+      const totalPop = this.totalPopulation || 1
       const worldAwareness = totalInf > 10000 || totalDead > 100
 
+      // IMPACT DES MORTS SUR LA RECHERCHE DU REMÈDE :
+      // Plus le nombre de morts et d'infectés grimpe, plus le personnel médical et scientifique
+      // meurt ou est incapacité, entraînant la saturation et l'effondrement des laboratoires.
+      const deathRatio = totalDead / totalPop
+      const infectedRatio = totalInf / totalPop
+      // À partir de 0.2% de morts mondiaux (~16M) ou forte infection, les labos perdent jusqu'à 95% de productivité
+      const casualtyImpact = Math.min(0.95, deathRatio * 50 + infectedRatio * 0.25)
+      this.doctorCasualtyPenalty = Math.max(0.05, 1 - casualtyImpact)
+      this.medicalCapacity = Math.round(this.doctorCasualtyPenalty * 100)
+
+      // Alertes de crise médicale
+      if (this.medicalCapacity <= 50 && !this.hasTriggeredMedicalCrisisNews && totalDead > 25000) {
+        this.hasTriggeredMedicalCrisisNews = true
+        this.addNews(
+          '⚠️ Pénurie critique de médecins : des milliers de soignants et chercheurs sont morts, le vaccin ralentit !',
+          'warning'
+        )
+      }
+      if (this.medicalCapacity <= 20 && !this.hasTriggeredMedicalCollapseNews && totalDead > 250000) {
+        this.hasTriggeredMedicalCollapseNews = true
+        this.addNews(
+          '💀 Hécatombe médicale mondiale : hôpitaux submergés et chercheurs décédés, les laboratoires ferment !',
+          'danger'
+        )
+      }
+
+      // Progression du remède mondial
       if (worldAwareness) {
         if (!this.cureActive) {
           this.cureActive = true
@@ -296,14 +382,24 @@ export const usePlagueStore = defineStore('plague', {
           )
         }
 
+        // Vitesse théorique de base
         const baseCureSpeed = 0.04 * (this.severity / this.cureResistance)
-        this.cureProgress = Math.min(100, this.cureProgress + baseCureSpeed)
+        // Vitesse effective lourdement ralentie par les décès de soignants / scientifiques
+        const effectiveCureSpeed = baseCureSpeed * this.doctorCasualtyPenalty
+        this.dailyCureSpeed = effectiveCureSpeed
+
+        this.cureProgress = Math.min(100, this.cureProgress + effectiveCureSpeed)
 
         if (this.cureProgress >= 100) {
           this.status = 'lost'
           this.cureProgress = 100
           this.addNews("❌ DÉFAITE : L'humanité a déployé un remède efficace à 100% !", 'danger')
           return
+        }
+
+        // Apparition aléatoire de fioles de recherche bleues à saboter
+        if (Math.random() < 0.12 && this.activeBubbles.filter((b) => b.type === 'cure').length < 2) {
+          this.spawnCureBubble()
         }
       }
 
@@ -372,6 +468,11 @@ export const usePlagueStore = defineStore('plague', {
       this.dnaPoints = 12
       this.cureProgress = 0
       this.cureActive = false
+      this.medicalCapacity = 100
+      this.doctorCasualtyPenalty = 1.0
+      this.dailyCureSpeed = 0
+      this.hasTriggeredMedicalCrisisNews = false
+      this.hasTriggeredMedicalCollapseNews = false
       this.purchasedModifications = []
       this.activeBubbles = []
       this.awardedMilestones = []
