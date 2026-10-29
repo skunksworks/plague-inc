@@ -11,6 +11,20 @@
             Propagation active ({{ plagueStore.infectedCountriesCount }} pays touchés)
           </span>
         </h2>
+
+        <!-- Tile Layer Switcher -->
+        <div class="tile-switcher">
+          <button
+            v-for="tile in tileOptions"
+            :key="tile.id"
+            class="tile-btn"
+            :class="{ active: currentTileId === tile.id }"
+            :title="tile.tooltip"
+            @click="changeTileLayer(tile.id)"
+          >
+            {{ tile.label }}
+          </button>
+        </div>
       </div>
 
       <!-- Quick country info bar if a country is selected -->
@@ -77,22 +91,78 @@ import { usePlagueStore } from '../stores/plague'
 const plagueStore = usePlagueStore()
 const mapContainer = ref(null)
 let map = null
+let currentTileLayer = null
 let geoJsonLayer = null
 const selectedCountry = ref(null)
 const bubbleMarkers = new Map()
+const disasterMarkers = new Map()
 
-// Style fonctionnel pour chaque pays selon son état d'infection
+// Configuration des fonds de carte
+const tileOptions = [
+  {
+    id: 'satellite',
+    label: '🛰️ Satellite',
+    tooltip: 'Vue Satellite Réaliste Esri World Imagery',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    options: { maxZoom: 18 }
+  },
+  {
+    id: 'dark',
+    label: '🌌 Nuit Tactique',
+    tooltip: 'Carte Sombre CartoDB Dark Matter',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    options: { subdomains: 'abcd', maxZoom: 19 }
+  },
+  {
+    id: 'gray',
+    label: '🏢 Gris Militaire',
+    tooltip: 'Fond Gris Sobre Esri Dark Gray Canvas',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    options: { maxZoom: 16 }
+  },
+  {
+    id: 'osm',
+    label: '🗺️ Standard',
+    tooltip: 'Carte OpenStreetMap Classique',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    options: { maxZoom: 19 }
+  }
+]
+
+const currentTileId = ref('satellite')
+
+function changeTileLayer(tileId) {
+  const chosen = tileOptions.find((t) => t.id === tileId)
+  if (!chosen || !map) return
+
+  currentTileId.value = tileId
+
+  if (currentTileLayer) {
+    map.removeLayer(currentTileLayer)
+  }
+
+  currentTileLayer = L.tileLayer(chosen.url, chosen.options).addTo(map)
+
+  // S'assurer que le GeoJSON reste au premier plan
+  if (geoJsonLayer) {
+    geoJsonLayer.bringToFront()
+    refreshMapStyles()
+  }
+}
+
+// Style fonctionnel pour chaque pays selon son état d'infection et le fond de carte
 function getCountryStyle(feature) {
   const name = feature.properties?.name || feature.properties?.NAME
   const nameFr = feature.properties?.name_fr || feature.properties?.NAME_FR
   const data = plagueStore.countryData[name] || plagueStore.countryData[nameFr]
+  const isSatellite = currentTileId.value === 'satellite'
 
   if (!data || (data.infected === 0 && data.dead === 0)) {
     return {
-      fillColor: '#1e293b',
-      fillOpacity: 0.65,
-      weight: 1,
-      color: '#334155',
+      fillColor: isSatellite ? '#020617' : '#1e293b',
+      fillOpacity: isSatellite ? 0.08 : 0.65,
+      weight: isSatellite ? 1 : 1,
+      color: isSatellite ? 'rgba(255, 255, 255, 0.45)' : '#334155',
       dashArray: ''
     }
   }
@@ -128,8 +198,8 @@ function getCountryStyle(feature) {
   return {
     fillColor,
     fillOpacity,
-    weight: 1,
-    color: '#7f1d1d'
+    weight: 1.2,
+    color: isSatellite ? '#fca5a5' : '#7f1d1d'
   }
 }
 
@@ -160,16 +230,14 @@ onMounted(async () => {
     center: [20, 0],
     zoom: 2,
     minZoom: 2,
-    maxZoom: 6,
+    maxZoom: 7,
     worldCopyJump: true,
     attributionControl: false
   })
 
-  // Fond de carte sombre CartoDB Dark Matter
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd',
-    maxZoom: 19
-  }).addTo(map)
+  // Fond de carte initial (Satellite)
+  const defaultTile = tileOptions.find((t) => t.id === currentTileId.value) || tileOptions[0]
+  currentTileLayer = L.tileLayer(defaultTile.url, defaultTile.options).addTo(map)
 
   // Charger les pays via le store
   try {
@@ -206,7 +274,7 @@ onMounted(async () => {
         // Effet de surbrillance
         layer.on('mouseover', () => {
           layer.setStyle({
-            weight: 2,
+            weight: 2.5,
             color: '#f59e0b',
             dashArray: ''
           })
@@ -231,12 +299,11 @@ watch(
   }
 )
 
-// Watcher pour synchroniser les bulles interactives ADN
+// Watcher pour synchroniser les bulles interactives ADN et fioles de remède
 watch(
   () => plagueStore.activeBubbles,
   (bubbles) => {
     if (!map) return
-    // Supprimer bulles disparues
     const currentIds = new Set(bubbles.map((b) => b.id))
     for (const [id, marker] of bubbleMarkers.entries()) {
       if (!currentIds.has(id)) {
@@ -245,15 +312,17 @@ watch(
       }
     }
 
-    // Ajouter nouvelles bulles
     bubbles.forEach((b) => {
       if (!bubbleMarkers.has(b.id)) {
-        const iconHtml = `<div class="dna-bubble pulse-animation">🧬</div>`
+        const isCure = b.type === 'cure'
+        const iconHtml = isCure
+          ? `<div class="cure-bubble pulse-animation" title="Saboter les recherches du remède mondial">🧪</div>`
+          : `<div class="dna-bubble pulse-animation" title="Points ADN">🧬</div>`
         const customIcon = L.divIcon({
           html: iconHtml,
-          className: 'bubble-icon',
-          iconSize: [32, 32],
-          iconAnchor: [16, 16]
+          className: isCure ? 'bubble-icon cure' : 'bubble-icon dna',
+          iconSize: [36, 36],
+          iconAnchor: [18, 18]
         })
 
         const marker = L.marker([b.lat, b.lng], { icon: customIcon }).addTo(map)
@@ -261,6 +330,56 @@ watch(
           plagueStore.popBubble(b.id)
         })
         bubbleMarkers.set(b.id, marker)
+      }
+    })
+  },
+  { deep: true }
+)
+
+// Watcher pour synchroniser les marqueurs de catastrophes naturelles
+watch(
+  () => plagueStore.activeDisasters,
+  (disasters) => {
+    if (!map) return
+    const currentIds = new Set(disasters.map((d) => d.id))
+    for (const [id, marker] of disasterMarkers.entries()) {
+      if (!currentIds.has(id)) {
+        marker.remove()
+        disasterMarkers.delete(id)
+      }
+    }
+
+    disasters.forEach((d) => {
+      if (!disasterMarkers.has(d.id) && d.lat !== 0 && d.lng !== 0) {
+        const iconHtml = `
+          <div class="disaster-marker-container">
+            <div class="disaster-shockwave"></div>
+            <div class="disaster-icon-badge">${d.icon}</div>
+          </div>
+        `
+        const customIcon = L.divIcon({
+          html: iconHtml,
+          className: 'disaster-leaflet-icon',
+          iconSize: [44, 44],
+          iconAnchor: [22, 22]
+        })
+
+        const marker = L.marker([d.lat, d.lng], { icon: customIcon }).addTo(map)
+
+        marker.bindPopup(`
+          <div class="disaster-popup">
+            <h4>${d.icon} ${d.name}</h4>
+            <div class="dp-country"><strong>${d.countryNameFr}</strong> (${d.daysRemaining} j restants)</div>
+            <p>${d.description}</p>
+            <div class="dp-stats">
+              <div>💀 Pertes humaines : <strong>${d.directDeaths.toLocaleString('fr-FR')}</strong></div>
+              <div>⚡ Transmission locale : <strong>x${d.infectivityMultiplier}</strong></div>
+              ${d.borderLock ? '<div class="dp-alert">🚫 Frontières et liaisons aériennes fermées</div>' : ''}
+            </div>
+          </div>
+        `)
+
+        disasterMarkers.set(d.id, marker)
       }
     })
   },
@@ -300,6 +419,14 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
+.map-title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .map-title-bar h2 {
   pointer-events: auto;
   display: inline-flex;
@@ -314,6 +441,40 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(8px);
   color: #f1f5f9;
   margin: 0;
+}
+
+.tile-switcher {
+  pointer-events: auto;
+  display: flex;
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.9);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+}
+
+.tile-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tile-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+.tile-btn.active {
+  background: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
 }
 
 .badge {
@@ -430,7 +591,7 @@ onBeforeUnmount(() => {
   flex: 1;
   width: 100%;
   height: 100%;
-  background: #090d16;
+  background: #020617;
 }
 
 .map-legend {
@@ -482,5 +643,145 @@ onBeforeUnmount(() => {
 .legend-color.dead {
   background: #270808;
   border: 1px solid #581c1c;
+}
+
+:deep(.cure-bubble) {
+  font-size: 1.3rem;
+  background: rgba(14, 165, 233, 0.4);
+  border: 2px solid #38bdf8;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.8);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+:deep(.cure-bubble:hover) {
+  transform: scale(1.25);
+  background: rgba(14, 165, 233, 0.7);
+}
+
+:deep(.dna-bubble) {
+  font-size: 1.25rem;
+  background: rgba(239, 68, 68, 0.4);
+  border: 2px solid #ef4444;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.75);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+:deep(.dna-bubble:hover) {
+  transform: scale(1.25);
+  background: rgba(239, 68, 68, 0.7);
+}
+
+:deep(.pulse-animation) {
+  animation: bubble-pulse 1.3s infinite ease-in-out;
+}
+
+@keyframes bubble-pulse {
+  0% {
+    transform: scale(0.95);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(0.95);
+  }
+}
+
+:deep(.disaster-marker-container) {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:deep(.disaster-icon-badge) {
+  font-size: 1.5rem;
+  background: rgba(239, 68, 68, 0.45);
+  border: 2px solid #f97316;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.95);
+  z-index: 2;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+:deep(.disaster-icon-badge:hover) {
+  transform: scale(1.25);
+  background: rgba(239, 68, 68, 0.7);
+}
+
+:deep(.disaster-shockwave) {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border: 2px solid #f97316;
+  border-radius: 50%;
+  animation: shockwave 1.6s infinite ease-out;
+  pointer-events: none;
+}
+
+@keyframes shockwave {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+:deep(.disaster-popup) {
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: #1e293b;
+  min-width: 220px;
+}
+
+:deep(.disaster-popup h4) {
+  margin: 0 0 4px 0;
+  font-size: 0.95rem;
+  color: #dc2626;
+  font-weight: 700;
+}
+
+:deep(.dp-country) {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+:deep(.dp-stats) {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+:deep(.dp-alert) {
+  color: #dc2626;
+  font-weight: 700;
 }
 </style>

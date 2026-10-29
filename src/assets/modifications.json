@@ -1,146 +1,352 @@
 [
   {
     "id": 1,
-    "name": "Aérosol (Air I)",
+    "name": "Aérosol I",
     "category": "transmission",
-    "description": "L'agent pathogène survit dans les particules en suspension dans l'air. Augmente la propagation par avions et zones urbaines.",
+    "icon": "💨",
+    "description": "L'agent pathogène survit dans les gouttelettes en suspension dans l'air. Favorise les vols commerciaux.",
     "effects": {
       "infectivity": 1.45,
+      "severity": 1.02,
+      "lethality": 1.0
+    },
+    "cost": 5,
+    "prerequisites": []
+  },
+  {
+    "id": 4,
+    "name": "Aérosol II",
+    "category": "transmission",
+    "icon": "✈️",
+    "description": "Résistance accrue aux systèmes de filtration d'air des avions de ligne. Contamination mondiale rapide.",
+    "effects": {
+      "infectivity": 1.7,
       "severity": 1.05,
       "lethality": 1.0
     },
-    "cost": 5
+    "cost": 12,
+    "prerequisites": [1]
   },
   {
     "id": 2,
-    "name": "Vecteur Hydrique (Eau I)",
+    "name": "Vecteur Hydrique I",
     "category": "transmission",
-    "description": "Survie prolongée dans l'eau potable. Augmente drastiquement la transmission maritime et dans les pays humides.",
+    "icon": "💧",
+    "description": "Survit dans l'eau courante et douce. Augmente grandement la contamination par voies maritimes.",
     "effects": {
       "infectivity": 1.4,
       "severity": 1.0,
       "lethality": 1.0
     },
-    "cost": 6
+    "cost": 6,
+    "prerequisites": []
+  },
+  {
+    "id": 13,
+    "name": "Vecteur Hydrique II",
+    "category": "transmission",
+    "icon": "🚢",
+    "description": "Survie en milieu salin. Les navires de commerce et de croisière transportent le virus d'un port à l'autre.",
+    "effects": {
+      "infectivity": 1.65,
+      "severity": 1.05,
+      "lethality": 1.0
+    },
+    "cost": 13,
+    "prerequisites": [2]
+  },
+  {
+    "id": 14,
+    "name": "Bio-aérosol Extrême",
+    "category": "transmission",
+    "icon": "🌪️",
+    "description": "Fusion parfaite entre transmission aérienne et hydrique. Traverse n'importe quel barrage sanitaire.",
+    "effects": {
+      "infectivity": 2.2,
+      "severity": 1.15,
+      "lethality": 1.02
+    },
+    "cost": 22,
+    "prerequisites": [4, 13]
   },
   {
     "id": 3,
-    "name": "Vecteur Animal (Oiseaux & Rongeurs)",
+    "name": "Oiseaux Migrateurs",
     "category": "transmission",
-    "description": "Les animaux sauvages et oiseaux migrateurs propagent la maladie à travers les frontières sans contrôle douanier.",
+    "icon": "🦅",
+    "description": "Les oiseaux sauvages propagent l'agent pathogène au-delà des frontières terrestres fermées.",
+    "effects": {
+      "infectivity": 1.55,
+      "severity": 1.08,
+      "lethality": 1.03
+    },
+    "cost": 8,
+    "prerequisites": []
+  },
+  {
+    "id": 15,
+    "name": "Vecteur Insectes & Moustiques",
+    "category": "transmission",
+    "icon": "🦟",
+    "description": "Infection transmise par les piqûres d'insectes, particulièrement fulgurante dans les pays chauds et tropicaux.",
     "effects": {
       "infectivity": 1.6,
       "severity": 1.1,
-      "lethality": 1.05
-    },
-    "cost": 9
-  },
-  {
-    "id": 4,
-    "name": "Bio-aérosol Extrême (Air II)",
-    "category": "transmission",
-    "description": "Le pathogène s'adapte à la climatisation et aux cabines pressurisées des avions de ligne.",
-    "effects": {
-      "infectivity": 1.8,
-      "severity": 1.15,
       "lethality": 1.0
     },
-    "cost": 12
+    "cost": 9,
+    "prerequisites": []
+  },
+  {
+    "id": 16,
+    "name": "Zoonose & Bétail",
+    "category": "transmission",
+    "icon": "🐖",
+    "description": "L'agent se transmet aux animaux d'élevage et rongeurs. Contamination rurale exponentielle.",
+    "effects": {
+      "infectivity": 1.7,
+      "severity": 1.1,
+      "lethality": 1.05
+    },
+    "cost": 11,
+    "prerequisites": [3]
   },
   {
     "id": 5,
     "name": "Toux & Éternuements",
     "category": "symptom",
-    "description": "Projette des milliards de particules virales. Très contagieux mais commence à attirer l'attention des autorités.",
+    "icon": "🤧",
+    "description": "Projette des milliards de particules virales. Très contagieux, faible gravité.",
     "effects": {
-      "infectivity": 1.5,
-      "severity": 1.3,
+      "infectivity": 1.45,
+      "severity": 1.25,
+      "lethality": 1.01
+    },
+    "cost": 4,
+    "prerequisites": []
+  },
+  {
+    "id": 17,
+    "name": "Nausées & Vomissements",
+    "category": "symptom",
+    "icon": "🤢",
+    "description": "Irritation violente du système digestif. Contamine l'eau et les surfaces partagées.",
+    "effects": {
+      "infectivity": 1.4,
+      "severity": 1.2,
       "lethality": 1.02
     },
-    "cost": 4
+    "cost": 4,
+    "prerequisites": []
   },
   {
     "id": 6,
     "name": "Fièvre & Éruptions",
     "category": "symptom",
-    "description": "Hausse soudaine de la température corporelle et lésions cutanées visibles.",
+    "icon": "🤒",
+    "description": "Forte fièvre et lésions cutanées visibles. Alerte immédiatement les autorités médicales.",
     "effects": {
       "infectivity": 1.3,
-      "severity": 1.5,
+      "severity": 1.6,
       "lethality": 1.1
     },
-    "cost": 7
+    "cost": 7,
+    "prerequisites": []
+  },
+  {
+    "id": 18,
+    "name": "Pneumonie Aiguë",
+    "category": "symptom",
+    "icon": "🫁",
+    "description": "Infiltration des fluides dans les poumons. Aggrave la contagion et provoque des hospitalisations massives.",
+    "effects": {
+      "infectivity": 1.35,
+      "severity": 1.8,
+      "lethality": 1.3
+    },
+    "cost": 10,
+    "prerequisites": [5]
   },
   {
     "id": 7,
     "name": "Défaillance Pulmonaire",
     "category": "symptom",
-    "description": "Destruction des alvéoles pulmonaires. Entraîne des difficultés respiratoires sévères et de premiers décès.",
+    "icon": "🫀",
+    "description": "Destruction des tissus alvéolaires. Asphyxie rapide et mortalité élevée des patients.",
     "effects": {
       "infectivity": 1.2,
-      "severity": 1.8,
-      "lethality": 1.6
+      "severity": 2.1,
+      "lethality": 1.8
     },
-    "cost": 14
+    "cost": 16,
+    "prerequisites": [18]
+  },
+  {
+    "id": 19,
+    "name": "Nécrose Tissulaire",
+    "category": "symptom",
+    "icon": "🩸",
+    "description": "Pourrissement accéléré des tissus mous et gangrène. Mortel et terrifiant pour les populations.",
+    "effects": {
+      "infectivity": 1.25,
+      "severity": 2.3,
+      "lethality": 2.2
+    },
+    "cost": 20,
+    "prerequisites": [6]
+  },
+  {
+    "id": 20,
+    "name": "Coma Profond",
+    "category": "symptom",
+    "icon": "🧠",
+    "description": "Lésions du système nerveux central. Les patients tombent dans un sommeil irréversible.",
+    "effects": {
+      "infectivity": 1.05,
+      "severity": 2.4,
+      "lethality": 2.0
+    },
+    "cost": 21,
+    "prerequisites": [6]
   },
   {
     "id": 8,
     "name": "Défaillance Multiviscérale",
     "category": "symptom",
-    "description": "Nécrose rapide des organes vitaux. Hautement mortel.",
+    "icon": "💀",
+    "description": "Cessation simultanée de tous les organes vitaux. Mortalité foudroyante.",
     "effects": {
-      "infectivity": 1.1,
-      "severity": 2.2,
-      "lethality": 2.5
+      "infectivity": 1.15,
+      "severity": 2.8,
+      "lethality": 3.0
     },
-    "cost": 22
+    "cost": 28,
+    "prerequisites": [7, 19]
   },
   {
     "id": 9,
-    "name": "Résistance au Froid",
+    "name": "Résistance au Froid I",
     "category": "resistance",
-    "description": "Membranes cellulaires renforcées contre les climats tempérés et polaires (Canada, Russie, Scandinavie).",
+    "icon": "❄️",
+    "description": "Membranes cellulaires épaissies. Empêche la gélification dans les pays nordiques et polaires.",
     "effects": {
       "infectivity": 1.35,
       "severity": 1.0,
       "lethality": 1.0
     },
-    "cost": 8
+    "cost": 8,
+    "prerequisites": []
+  },
+  {
+    "id": 21,
+    "name": "Résistance au Froid II",
+    "category": "resistance",
+    "icon": "🧊",
+    "description": "Adaptation aux glaces de l'Arctique. Contamination explosive en Russie, Canada et Scandinavie.",
+    "effects": {
+      "infectivity": 1.6,
+      "severity": 1.05,
+      "lethality": 1.0
+    },
+    "cost": 14,
+    "prerequisites": [9]
   },
   {
     "id": 10,
-    "name": "Résistance à la Chaleur",
+    "name": "Résistance à la Chaleur I",
     "category": "resistance",
-    "description": "Protection contre les températures arides et tropicales (Afrique, Moyen-Orient, Amérique du Sud).",
+    "icon": "☀️",
+    "description": "Protéines stables face aux rayons UV et à la canicule (Afrique, Moyen-Orient).",
     "effects": {
       "infectivity": 1.35,
       "severity": 1.0,
       "lethality": 1.0
     },
-    "cost": 8
+    "cost": 8,
+    "prerequisites": []
+  },
+  {
+    "id": 22,
+    "name": "Résistance à la Chaleur II",
+    "category": "resistance",
+    "icon": "🔥",
+    "description": "Survie aux climats désertiques et équatoriaux les plus extrêmes.",
+    "effects": {
+      "infectivity": 1.6,
+      "severity": 1.05,
+      "lethality": 1.0
+    },
+    "cost": 14,
+    "prerequisites": [10]
+  },
+  {
+    "id": 23,
+    "name": "Résilience Environnementale",
+    "category": "resistance",
+    "icon": "🛡️",
+    "description": "Survie maximale sous tous les climats du globe.",
+    "effects": {
+      "infectivity": 1.9,
+      "severity": 1.1,
+      "lethality": 1.05
+    },
+    "cost": 22,
+    "prerequisites": [21, 22]
   },
   {
     "id": 11,
-    "name": "Résistance Médicamenteuse",
+    "name": "Résistance Médicamenteuse I",
     "category": "resistance",
-    "description": "Le pathogène neutralise les antibiotiques et antiviraux courants dans les pays riches.",
+    "icon": "💊",
+    "description": "Déjoue les antibiotiques de première ligne dans les pays développés.",
     "effects": {
       "infectivity": 1.3,
       "severity": 1.2,
       "cureResistance": 1.5
     },
-    "cost": 12
+    "cost": 11,
+    "prerequisites": []
+  },
+  {
+    "id": 24,
+    "name": "Résistance Médicamenteuse II",
+    "category": "resistance",
+    "icon": "🧬",
+    "description": "Inhibe les antiviraux expérimentaux. Neutralise les thérapies avancées.",
+    "effects": {
+      "infectivity": 1.5,
+      "severity": 1.3,
+      "cureResistance": 2.0
+    },
+    "cost": 17,
+    "prerequisites": [11]
   },
   {
     "id": 12,
-    "name": "Recombinaison Génétique",
+    "name": "Recombinaison Génétique I",
     "category": "resistance",
-    "description": "Mute constamment pour rendre les anticorps inefficaces. Ralentit fortement le développement d'un vaccin.",
+    "icon": "🧪",
+    "description": "Permutation constante des séquences d'ARN. Les anticorps peinent à reconnaître le virus.",
     "effects": {
       "infectivity": 1.1,
-      "severity": 1.1,
+      "severity": 1.15,
       "cureResistance": 2.2
     },
-    "cost": 18
+    "cost": 16,
+    "prerequisites": []
+  },
+  {
+    "id": 25,
+    "name": "Recombinaison Génétique II",
+    "category": "resistance",
+    "icon": "☣️",
+    "description": "Mutations chaotiques permanentes. Rend la fabrication d'un vaccin quasi impossible.",
+    "effects": {
+      "infectivity": 1.2,
+      "severity": 1.2,
+      "cureResistance": 3.0
+    },
+    "cost": 25,
+    "prerequisites": [12]
   }
 ]
